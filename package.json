@@ -16,7 +16,8 @@
     "prelude-ts": "^1.0.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "weland": "^0.6.0"
+    "weland": "^0.6.0",
+    "mismatched": "^3.3.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -25,7 +26,6 @@
     "@types/react-dom": "^19",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.1",
-    "mismatched": "^3.3.5",
     "prettier": "^3.5.3",
     "tailwindcss": "^4",
     "typescript": "^5",
