@@ -1,0 +1,47 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+coverage/
+
+# WebStorm
+.idea/
+*.iml
+*.iws
+out/
+
+# dotenv environment variables
+.env
+.env.*.local
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+package-lock.json
+
+# Vite/Next specific (if applicable)
+.next/
+.vite/
+
+# Testing
+jest.config.js
+test-results/
+
+# Lint-staged cache
+.lintstagedrc
+
+# Others
+.cache/
+*.tsbuildinfo
