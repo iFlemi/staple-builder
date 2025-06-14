@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="1" failures="1" errors="0" time="0">
+    <testsuite name="src/functions/colourParsing.test.ts" timestamp="2025-06-14T19:58:51.470Z" hostname="Ians-Mac-mini.local" tests="1" failures="1" errors="0" skipped="0" time="0">
+        <testcase classname="src/functions/colourParsing.test.ts" name="src/functions/colourParsing.test.ts" time="0">
+            <failure message="Cannot find package &apos;@/functions/colourParsing&apos; imported from &apos;/Users/ian/code/staple-builder/src/functions/colourParsing.test.ts&apos;" type="Error">
+Error: Cannot find package &apos;@/functions/colourParsing&apos; imported from &apos;/Users/ian/code/staple-builder/src/functions/colourParsing.test.ts&apos;
+ ❯ src/functions/colourParsing.test.ts:2:1
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: &apos;ERR_MODULE_NOT_FOUND&apos; }
+Caused by: Caused by: Error: Failed to load url @/functions/colourParsing (resolved id: @/functions/colourParsing) in /Users/ian/code/staple-builder/src/functions/colourParsing.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:35725:17
+            </failure>
+        </testcase>
+    </testsuite>
+</testsuites>

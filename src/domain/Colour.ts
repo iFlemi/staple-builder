@@ -1,40 +1,22 @@
-//characterRepresentation: 'W' | 'U' | 'B' | 'R' | 'G',
-export type Colour = White | Blue | Black | Red | Green
+export type ColourCharacter = 'W' | 'U' | 'B' | 'R' | 'G'
 
-export type White = {
-    character: 'W'
-    symbol: string,
-    name: 'White'
+export type Colour = {
+    character: ColourCharacter
+    name: string
+    symbol: string
+} | { name: "Colourless", symbol: string }
+
+export const White: Colour = { character: 'W', name: 'White', symbol: 'W' }
+export const Blue: Colour = { character: 'U', name: 'Blue', symbol: 'U' }
+export const Black: Colour = { character: 'B', name: 'Black', symbol: 'B' }
+export const Red: Colour = { character: 'R', name: 'Red', symbol: 'R' }
+export const Green: Colour = { character: 'G', name: 'Green', symbol: 'G' }
+export const Colourless: Colour = { name: 'Colourless', symbol: 'C'}
+
+export const colourMap: Record<string, Colour> = {
+    'W': White,
+    'U': Blue,
+    'B': Black,
+    'R': Red,
+    'G': Green
 }
-
-export type Blue = {
-    character: 'U'
-    symbol: string,
-    name: 'Blue'
-}
-
-export type Black = {
-    character: 'B'
-    symbol: string,
-    name: 'Black'
-}
-
-export type Red = {
-    character: 'R'
-    symbol: string,
-    name: 'Red'
-}
-
-export type Green = {
-    character: 'G'
-    symbol: string,
-    name: 'Green'
-}
-
-export type Colourless = {
-    character: 'C'
-    symbol: string,
-    name: 'Colourless'
-}
-
-
