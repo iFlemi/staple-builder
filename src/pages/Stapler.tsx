@@ -116,14 +116,14 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="h-screen bg-white p-6 flex flex-col">
+      <div className="max-w-6xl mx-auto flex-1 flex flex-col">
         {/* Title */}
         <h1 className="text-4xl font-bold mb-8 text-center">Brawl Stapler</h1>
 
-        <div className="grid grid-cols-2 gap-8">
-          {/* Column 1 */}
-          <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1">
+          {/* Column 1 - Takes 1/3 width */}
+          <div className="space-y-6 lg:col-span-1">
             {/* Mana Symbol Bar */}
             <div className="p-4">
               <div className="grid grid-cols-6 gap-2">
@@ -183,10 +183,10 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
             </div>
           </div>
 
-          {/* Column 2 */}
-          <div className="space-y-4">
+          {/* Column 2 - Takes 2/3 width */}
+          <div className="space-y-4 flex flex-col h-full lg:col-span-2">
             {/* Input Fields */}
-            <div className="space-y-3">
+            <div className="space-y-3 flex-shrink-0">
               <div>
                 <label
                   htmlFor="commanderName"
@@ -220,40 +220,42 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
               </div>
             </div>
 
-            {/* Export Preview Box */}
-            <div className="p-4 h-96">
-              <h2 className="text-xl font-bold mb-4">Export Preview</h2>
+            {/* Export Preview Box - Now uses full available height */}
+            <div className="flex-1 flex flex-col p-4 relative overflow-hidden">
+              <h2 className="text-xl font-bold mb-4 flex-shrink-0">
+                Export Preview
+              </h2>
               <textarea
                 value={exportText}
                 onChange={(e) => setExportText(e.target.value)}
-                className="w-full h-64 p-2 border border-gray-300 resize-none font-mono text-sm"
+                className="flex-1 w-full p-2 border border-gray-300 resize-none font-mono text-sm pr-32 pb-20"
                 placeholder="Select colours and packages to preview deck list..."
               />
-            </div>
 
-            {/* Export Button */}
-            <div className="flex justify-end">
-              <button
-                onClick={handleExport}
-                className={`px-6 py-2 border-2 border-black font-semibold text-lg transition-colors
-                ${
-                  deckBuildError
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "bg-white hover:bg-gray-100"
-                }`}
-              >
-                {copySuccess ? "Copied!" : "Export"}
-              </button>
-              {deckBuildError && (
-                <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm max-w-xs">
-                  {deckBuildError}
-                </div>
-              )}
-              {deckWarning && (
-                <div className="mt-2 p-2 bg-red-100 border border-amber-500 text-amber-600 rounded text-sm max-w-xs">
-                  {deckWarning}
-                </div>
-              )}
+              {/* Export Button - Anchored to bottom right */}
+              <div className="absolute bottom-4 right-4 flex flex-col items-end">
+                <button
+                  onClick={handleExport}
+                  className={`px-6 py-2 border-2 border-black font-semibold text-lg transition-colors
+                  ${
+                    deckBuildError
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-white hover:bg-gray-100"
+                  }`}
+                >
+                  {copySuccess ? "Copied!" : "Export"}
+                </button>
+                {deckBuildError && (
+                  <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm max-w-xs">
+                    {deckBuildError}
+                  </div>
+                )}
+                {deckWarning && (
+                  <div className="mt-2 p-2 bg-red-100 border border-amber-500 text-amber-600 rounded text-sm max-w-xs">
+                    {deckWarning}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
