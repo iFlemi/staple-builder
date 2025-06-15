@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useCallback } from "react"
 import { ColourCharacter } from "@/domain/Colour"
 import { ManaColours } from "@/domain/UI/ManaColours"
 import { FilePackage } from "@/domain/Package"
@@ -12,6 +12,13 @@ import { getDeckExport, toMTGAExport } from "@/functions/deckExport"
 interface Props {
   packages: FilePackage[]
   cacheEntries: [string, string[]][]
+}
+
+interface Toast {
+  id: string
+  message: string
+  type: "error" | "warning" | "success"
+  duration?: number
 }
 
 const Stapler = ({ packages, cacheEntries }: Props) => {
@@ -28,11 +35,10 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
     C: true,
   })
   const [exportText, setExportText] = useState("")
-  const [copySuccess, setCopySuccess] = useState(false)
-  const [deckWarning, setDeckWarning] = useState("")
-  const [deckBuildError, setDeckBuildError] = useState("")
   const [commanderName, setCommanderName] = useState("Progenitus")
   const [deckName, setDeckName] = useState("Brawl Stapler Deck")
+  const [isLoading, setIsLoading] = useState(false)
+  const [toasts, setToasts] = useState<Toast[]>([])
 
   const [selectedPackages, setSelectedPackages] = useState<PackageView>(() =>
     packages.reduce(
@@ -42,25 +48,30 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
   )
 
   const manaColors = ManaColours
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const isProcessingRef = useRef(false)
 
-  const toggleMana = (symbol: ColourCharacter) => {
-    setSelectedMana((prev) => ({
-      ...prev,
-      [symbol]: !prev[symbol],
-    }))
-  }
+  const addToast = useCallback(
+    (message: string, type: Toast["type"], duration = 5000) => {
+      const id = Math.random().toString(36).substr(2, 9)
+      const newToast: Toast = { id, message, type, duration }
 
-  const togglePackage = (packageName: string) => {
-    setDeckWarning("")
-    setDeckBuildError("")
+      setToasts((prev) => [...prev, newToast])
 
-    setSelectedPackages((prev) => ({
-      ...prev,
-      [packageName]: !prev[packageName],
-    }))
-  }
+      if (duration > 0) {
+        setTimeout(() => {
+          setToasts((prev) => prev.filter((toast) => toast.id !== id))
+        }, duration)
+      }
+    },
+    [],
+  )
 
-  const populateExportList = (): string => {
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id))
+  }, [])
+
+  const populateExportList = useCallback((): string => {
     const colours = stringToColourIdentity(
       Object.entries(selectedMana)
         .filter(([_, selected]) => selected)
@@ -96,36 +107,140 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
 
     if (deckExportResult.isLeft()) {
       console.error(deckExportResult.getLeft())
-      setDeckBuildError(deckExportResult.getLeft().message)
-      setTimeout(() => setDeckBuildError(""), 5000)
+      addToast(deckExportResult.getLeft().message, "error")
       return ""
     }
 
     const deckExport = deckExportResult.get()
     if (deckExport.cardLines.length > 99) {
-      setDeckWarning("Deck is too large for Brawl, it will import as Timeless")
-      setTimeout(() => setDeckWarning(""), 5000)
+      addToast(
+        "Deck is too large for Brawl, it will import as Timeless",
+        "warning",
+      )
     }
 
     const exportString = toMTGAExport(deckExport)
     setExportText(exportString)
     return exportString
+  }, [
+    selectedMana,
+    selectedPackages,
+    packages,
+    cacheEntries,
+    commanderName,
+    deckName,
+    addToast,
+  ])
+
+  const debouncedPopulateExportList = useCallback(() => {
+    // Clear existing timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+
+    // Prevent multiple simultaneous executions
+    if (isProcessingRef.current) {
+      return
+    }
+
+    setIsLoading(true)
+
+    debounceRef.current = setTimeout(() => {
+      isProcessingRef.current = true
+
+      try {
+        populateExportList()
+      } catch (error) {
+        console.error("Error populating export list:", error)
+        addToast("An error occurred while building the deck", "error")
+      } finally {
+        setIsLoading(false)
+        isProcessingRef.current = false
+      }
+    }, 300) // 300ms debounce delay
+  }, [populateExportList, addToast])
+
+  const toggleMana = (symbol: ColourCharacter) => {
+    setSelectedMana((prev) => ({
+      ...prev,
+      [symbol]: !prev[symbol],
+    }))
+    debouncedPopulateExportList()
+  }
+
+  const togglePackage = (packageName: string) => {
+    setSelectedPackages((prev) => ({
+      ...prev,
+      [packageName]: !prev[packageName],
+    }))
+    debouncedPopulateExportList()
+  }
+
+  const handleCommanderNameChange = (value: string) => {
+    setCommanderName(value)
+    debouncedPopulateExportList()
+  }
+
+  const handleDeckNameChange = (value: string) => {
+    setDeckName(value)
+    debouncedPopulateExportList()
   }
 
   const handleExport = async () => {
-    const exportString = populateExportList()
+    if (isLoading || isProcessingRef.current) {
+      return
+    }
+
+    const exportString = exportText || populateExportList()
     try {
       await navigator.clipboard.writeText(exportString)
       console.log("Copied to clipboard!")
+      addToast("Copied to clipboard!", "success", 2000)
     } catch (err) {
       console.error("Failed to copy to clipboard:", err)
+      addToast("Failed to copy to clipboard", "error")
     }
-    setCopySuccess(true)
-    setTimeout(() => setCopySuccess(false), 1000)
   }
+
+  // Toast Component
+  const ToastContainer = () => (
+    <div className="fixed top-4 right-4 z-50 space-y-2">
+      {toasts.map((toast) => (
+        <div
+          key={toast.id}
+          className={`
+            max-w-sm p-4 rounded-lg shadow-lg border-l-4 transition-all duration-300 ease-in-out
+            ${toast.type === "error" ? "bg-red-50 border-red-500 text-red-700" : ""}
+            ${toast.type === "warning" ? "bg-amber-50 border-amber-500 text-amber-700" : ""}
+            ${toast.type === "success" ? "bg-green-50 border-green-500 text-green-700" : ""}
+          `}
+        >
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <p className="text-sm font-medium">{toast.message}</p>
+            </div>
+            <button
+              onClick={() => removeToast(toast.id)}
+              className="ml-3 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 
   return (
     <div className="h-screen bg-white p-6 flex flex-col">
+      <ToastContainer />
+
       <div className="max-w-6xl mx-auto flex-1 flex flex-col">
         {/* Title */}
         <h1 className="text-4xl font-bold mb-8 text-center">Brawl Stapler</h1>
@@ -139,15 +254,14 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                 {manaColors.map(({ symbol, color, name }) => (
                   <button
                     key={symbol}
-                    onClick={() => {
-                      toggleMana(symbol)
-                      populateExportList()
-                    }}
+                    onClick={() => toggleMana(symbol)}
+                    disabled={isLoading}
                     className={`
                       w-12 h-12 border-2 flex items-center justify-center p-1
                       transition-all duration-200 hover:scale-105 rounded-full
                       ${color}
                       ${selectedMana[symbol] ? `ring-4 ${manaColors.find((mc) => mc.symbol === symbol)?.ring} ring-opacity-50` : ""}
+                      ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
                     `}
                     title={name}
                   >
@@ -173,15 +287,13 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                       type="checkbox"
                       id={packageName}
                       checked={isSelected}
-                      onChange={() => {
-                        togglePackage(packageName)
-                        populateExportList()
-                      }}
-                      className="w-5 h-5 border-2 border-black"
+                      onChange={() => togglePackage(packageName)}
+                      disabled={isLoading}
+                      className={`w-5 h-5 border-2 border-black ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     />
                     <label
                       htmlFor={packageName}
-                      className="text-xl font-semibold cursor-pointer select-none"
+                      className={`text-xl font-semibold cursor-pointer select-none ${isLoading ? "opacity-50" : ""}`}
                     >
                       {packageName}
                     </label>
@@ -213,11 +325,9 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                   type="text"
                   id="commanderName"
                   value={commanderName}
-                  onChange={(e) => {
-                    setCommanderName(e.target.value)
-                    populateExportList()
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => handleCommanderNameChange(e.target.value)}
+                  disabled={isLoading}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 />
               </div>
 
@@ -232,24 +342,33 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                   type="text"
                   id="deckName"
                   value={deckName}
-                  onChange={(e) => {
-                    setDeckName(e.target.value)
-                    populateExportList()
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => handleDeckNameChange(e.target.value)}
+                  disabled={isLoading}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 />
               </div>
             </div>
 
             {/* Export Preview Box */}
             <div className="flex-1 flex flex-col p-4 relative overflow-hidden">
-              <h2 className="text-xl font-bold mb-4 flex-shrink-0">
-                Export Preview
-              </h2>
+              <div className="flex items-center mb-4">
+                <h2 className="text-xl font-bold flex-shrink-0">
+                  Export Preview
+                </h2>
+                {isLoading && (
+                  <div className="ml-3 flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    <span className="ml-2 text-sm text-gray-600">
+                      Building deck...
+                    </span>
+                  </div>
+                )}
+              </div>
               <textarea
                 value={exportText}
                 onChange={(e) => setExportText(e.target.value)}
-                className="flex-1 w-full p-2 border border-gray-300 resize-none font-mono text-sm pr-32 pb-20"
+                disabled={isLoading}
+                className={`flex-1 w-full p-2 border border-gray-300 resize-none font-mono text-sm pr-32 pb-20 ${isLoading ? "opacity-50" : ""}`}
                 placeholder="Select colours and packages to preview deck list..."
               />
 
@@ -257,25 +376,16 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
               <div className="absolute bottom-4 right-4 flex flex-col items-end">
                 <button
                   onClick={handleExport}
+                  disabled={isLoading}
                   className={`px-6 py-2 border-2 border-black font-semibold text-lg transition-colors
                   ${
-                    deckBuildError
+                    isLoading
                       ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                       : "bg-white hover:bg-gray-100"
                   }`}
                 >
-                  {copySuccess ? "Copied!" : "Export"}
+                  {isLoading ? "Building..." : "Export"}
                 </button>
-                {deckBuildError && (
-                  <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm max-w-xs">
-                    {deckBuildError}
-                  </div>
-                )}
-                {deckWarning && (
-                  <div className="mt-2 p-2 bg-red-100 border border-amber-500 text-amber-600 rounded text-sm max-w-xs">
-                    {deckWarning}
-                  </div>
-                )}
               </div>
             </div>
           </div>
