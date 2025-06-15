@@ -26,8 +26,8 @@ describe("deckExport tests", () => {
     assertThat(result.commanderName).is(match.string.nonEmpty())
   })
 
-  it("should convert deckExport to export string", () => {
-    //bad idea to not use test data generator instead of calling code logic, but not a real test, just an exploratory one
+  it.skip("should convert deckExport to export string", () => {
+    //bad idea to not use test data generator instead of calling internal logic, but this is not a real test just an exploratory one
     const deckExport = getDeckExport(generateCards(99))
     const result = toMTGAExport(deckExport)
     PrettyPrinter.logToConsole(result)
