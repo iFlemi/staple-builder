@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { ColourCharacter } from "@/domain/Colour"
 import { ManaColours } from "@/domain/UI/ManaColours"
 import { FilePackage } from "@/domain/Package"
@@ -149,7 +149,74 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
       isProcessingRef.current = true
 
       try {
-        populateExportList()
+        // Get fresh state values at execution time
+        setSelectedMana((currentMana) => {
+          setSelectedPackages((currentPackages) => {
+            setCommanderName((currentCommander) => {
+              setDeckName((currentDeckName) => {
+                // Execute with current state values
+                const colours = stringToColourIdentity(
+                  Object.entries(currentMana)
+                    .filter(([_, selected]) => selected)
+                    .map(([symbol, _]) => symbol)
+                    .join(""),
+                )
+
+                if (colours.isLeft()) {
+                  console.error(colours.getLeft())
+                  setExportText("")
+                  return currentDeckName
+                }
+
+                const selectedPackageNames = Object.entries(currentPackages)
+                  .filter(([_, selected]) => selected)
+                  .map(([name, _]) => name)
+
+                const cardNames = new Set(
+                  packages
+                    .filter((p) => selectedPackageNames.includes(p.name))
+                    .map((p) => p.cardNames)
+                    .flat(),
+                )
+
+                const cache = newCardCache()
+                cache.fromEntries(cacheEntries)
+                const lookedUpCards = cache
+                  .lookup(colours.get())
+                  .intersection(cardNames)
+
+                const deckExportResult = getDeckExport(
+                  [...lookedUpCards],
+                  currentCommander,
+                  currentDeckName,
+                )
+
+                if (deckExportResult.isLeft()) {
+                  console.error(deckExportResult.getLeft())
+                  addToast(deckExportResult.getLeft().message, "error")
+                  setExportText("")
+                  return currentDeckName
+                }
+
+                const deckExport = deckExportResult.get()
+                if (deckExport.cardLines.length > 99) {
+                  addToast(
+                    "Deck is too large for Brawl, it will import as Timeless",
+                    "warning",
+                  )
+                }
+
+                const exportString = toMTGAExport(deckExport)
+                setExportText(exportString)
+
+                return currentDeckName
+              })
+              return currentCommander
+            })
+            return currentPackages
+          })
+          return currentMana
+        })
       } catch (error) {
         console.error("Error populating export list:", error)
         addToast("An error occurred while building the deck", "error")
@@ -158,7 +225,7 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
         isProcessingRef.current = false
       }
     }, 300) // 300ms debounce delay
-  }, [populateExportList, addToast])
+  }, [packages, cacheEntries, addToast])
 
   const toggleMana = (symbol: ColourCharacter) => {
     setSelectedMana((prev) => ({
@@ -191,7 +258,50 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
       return
     }
 
-    const exportString = exportText || populateExportList()
+    // If no export text, generate it with current state
+    let exportString = exportText
+    if (!exportString) {
+      const colours = stringToColourIdentity(
+        Object.entries(selectedMana)
+          .filter(([_, selected]) => selected)
+          .map(([symbol, _]) => symbol)
+          .join(""),
+      )
+
+      if (colours.isLeft()) {
+        addToast("Invalid color selection", "error")
+        return
+      }
+
+      const selectedPackageNames = Object.entries(selectedPackages)
+        .filter(([_, selected]) => selected)
+        .map(([name, _]) => name)
+
+      const cardNames = new Set(
+        packages
+          .filter((p) => selectedPackageNames.includes(p.name))
+          .map((p) => p.cardNames)
+          .flat(),
+      )
+
+      const cache = newCardCache()
+      cache.fromEntries(cacheEntries)
+      const lookedUpCards = cache.lookup(colours.get()).intersection(cardNames)
+
+      const deckExportResult = getDeckExport(
+        [...lookedUpCards],
+        commanderName,
+        deckName,
+      )
+
+      if (deckExportResult.isLeft()) {
+        addToast(deckExportResult.getLeft().message, "error")
+        return
+      }
+
+      exportString = toMTGAExport(deckExportResult.get())
+    }
+
     try {
       await navigator.clipboard.writeText(exportString)
       console.log("Copied to clipboard!")
