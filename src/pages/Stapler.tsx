@@ -60,14 +60,18 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
     }))
   }
 
-  const handleExport = async () => {
+  const populateExportList = (): string => {
     const colours = stringToColourIdentity(
       Object.entries(selectedMana)
         .filter(([_, selected]) => selected)
         .map(([symbol, _]) => symbol)
         .join(""),
     )
-    if (colours.isLeft()) return console.error(colours.getLeft())
+
+    if (colours.isLeft()) {
+      console.error(colours.getLeft())
+      return ""
+    }
 
     const selectedPackageNames = Object.entries(selectedPackages)
       .filter(([_, selected]) => selected)
@@ -94,7 +98,7 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
       console.error(deckExportResult.getLeft())
       setDeckBuildError(deckExportResult.getLeft().message)
       setTimeout(() => setDeckBuildError(""), 5000)
-      return
+      return ""
     }
 
     const deckExport = deckExportResult.get()
@@ -105,7 +109,11 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
 
     const exportString = toMTGAExport(deckExport)
     setExportText(exportString)
+    return exportString
+  }
 
+  const handleExport = async () => {
+    const exportString = populateExportList()
     try {
       await navigator.clipboard.writeText(exportString)
       console.log("Copied to clipboard!")
@@ -131,7 +139,10 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                 {manaColors.map(({ symbol, color, name }) => (
                   <button
                     key={symbol}
-                    onClick={() => toggleMana(symbol)}
+                    onClick={() => {
+                      toggleMana(symbol)
+                      populateExportList()
+                    }}
                     className={`
                       w-12 h-12 border-2 flex items-center justify-center p-1
                       transition-all duration-200 hover:scale-105 rounded-full
@@ -162,7 +173,10 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                       type="checkbox"
                       id={packageName}
                       checked={isSelected}
-                      onChange={() => togglePackage(packageName)}
+                      onChange={() => {
+                        togglePackage(packageName)
+                        populateExportList()
+                      }}
                       className="w-5 h-5 border-2 border-black"
                     />
                     <label
@@ -199,7 +213,10 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                   type="text"
                   id="commanderName"
                   value={commanderName}
-                  onChange={(e) => setCommanderName(e.target.value)}
+                  onChange={(e) => {
+                    setCommanderName(e.target.value)
+                    populateExportList()
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -215,13 +232,16 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                   type="text"
                   id="deckName"
                   value={deckName}
-                  onChange={(e) => setDeckName(e.target.value)}
+                  onChange={(e) => {
+                    setDeckName(e.target.value)
+                    populateExportList()
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
 
-            {/* Export Preview Box - Now uses full available height */}
+            {/* Export Preview Box */}
             <div className="flex-1 flex flex-col p-4 relative overflow-hidden">
               <h2 className="text-xl font-bold mb-4 flex-shrink-0">
                 Export Preview
@@ -233,7 +253,7 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                 placeholder="Select colours and packages to preview deck list..."
               />
 
-              {/* Export Button - Anchored to bottom right */}
+              {/* Export Button */}
               <div className="absolute bottom-4 right-4 flex flex-col items-end">
                 <button
                   onClick={handleExport}
