@@ -14,9 +14,11 @@ interface Props {
   cacheEntries: [string, string[]][]
 }
 
-//TODO: What a complete mess... I'll get around to fixing it after I've finished adding more package lists :D
-
 const Stapler = ({ packages, cacheEntries }: Props) => {
+  if (!packages || !Array.isArray(packages)) {
+    return <div>Loading...</div>
+  }
+
   const [selectedMana, setSelectedMana] = useState({
     W: false,
     B: false,

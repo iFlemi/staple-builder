@@ -2,10 +2,15 @@ import Stapler from "@/pages/Stapler"
 import { getPackages } from "@/functions/packageLookup"
 import { loadAllCards } from "@/functions/populateCards"
 
-const StaplerServer = async () => {
+export async function getStaticProps() {
   const packages = await getPackages()
   const cacheEntries = await loadAllCards()
-  return <Stapler packages={packages} cacheEntries={cacheEntries} />
+  return { props: { packages, cacheEntries } }
+}
+
+const StaplerServer = async () => {
+  const { props } = await getStaticProps()
+  return <Stapler packages={props.packages} cacheEntries={props.cacheEntries} />
 }
 
 export default StaplerServer
