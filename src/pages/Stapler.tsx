@@ -6,14 +6,15 @@ import { ManaColours } from "@/domain/UI/ManaColours"
 import { FilePackage } from "@/domain/Package"
 import { PackageView } from "@/domain/UI/PackageView"
 import { stringToColourIdentity } from "@/functions/colourParser"
-import { CardCache, newCardCache } from "@/functions/cardCache"
-import { PrettyPrinter } from "mismatched"
+import { newCardCache } from "@/functions/cardCache"
 import { getDeckExport, toMTGAExport } from "@/functions/deckExport"
 
 interface Props {
   packages: FilePackage[]
   cacheEntries: [string, string[]][]
 }
+
+//TODO: What a complete mess... I'll get around to fixing it after I've finished adding more package lists :D
 
 const Stapler = ({ packages, cacheEntries }: Props) => {
   const [selectedMana, setSelectedMana] = useState({
@@ -22,10 +23,14 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
     R: false,
     G: false,
     U: false,
-    C: false,
+    C: true,
   })
   const [exportText, setExportText] = useState("")
   const [copySuccess, setCopySuccess] = useState(false)
+  const [deckWarning, setDeckWarning] = useState("")
+  const [deckBuildError, setDeckBuildError] = useState("")
+  const [commanderName, setCommanderName] = useState("Progenitus")
+  const [deckName, setDeckName] = useState("Brawl Stapler Deck")
 
   const [selectedPackages, setSelectedPackages] = useState<PackageView>(() =>
     packages.reduce(
@@ -44,6 +49,9 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
   }
 
   const togglePackage = (packageName: string) => {
+    setDeckWarning("")
+    setDeckBuildError("")
+
     setSelectedPackages((prev) => ({
       ...prev,
       [packageName]: !prev[packageName],
@@ -74,7 +82,24 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
     cache.fromEntries(cacheEntries)
     const lookedUpCards = cache.lookup(colours.get()).intersection(cardNames)
 
-    const deckExport = getDeckExport([...lookedUpCards])
+    const deckExportResult = getDeckExport(
+      [...lookedUpCards],
+      commanderName,
+      deckName,
+    )
+
+    if (deckExportResult.isLeft()) {
+      console.error(deckExportResult.getLeft())
+      setDeckBuildError(deckExportResult.getLeft().message)
+      return
+    }
+
+    const deckExport = deckExportResult.get()
+    if (deckExport.cardLines.length > 99) {
+      setDeckWarning("Deck is too large for Brawl, it will import as Timeless")
+      setTimeout(() => setDeckWarning(""), 5000)
+    }
+
     const exportString = toMTGAExport(deckExport)
     setExportText(exportString)
 
@@ -158,6 +183,41 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
 
           {/* Column 2 */}
           <div className="space-y-4">
+            {/* Input Fields */}
+            <div className="space-y-3">
+              <div>
+                <label
+                  htmlFor="commanderName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Commander Name
+                </label>
+                <input
+                  type="text"
+                  id="commanderName"
+                  value={commanderName}
+                  onChange={(e) => setCommanderName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="deckName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Deck Name
+                </label>
+                <input
+                  type="text"
+                  id="deckName"
+                  value={deckName}
+                  onChange={(e) => setDeckName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
             {/* Export Preview Box */}
             <div className="p-4 h-96">
               <h2 className="text-xl font-bold mb-4">Export Preview</h2>
@@ -173,31 +233,27 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
             <div className="flex justify-end">
               <button
                 onClick={handleExport}
-                className="px-6 py-2 border-2 border-black bg-white hover:bg-gray-100 font-semibold text-lg transition-colors"
+                className={`px-6 py-2 border-2 border-black font-semibold text-lg transition-colors
+                ${
+                  deckBuildError
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    : "bg-white hover:bg-gray-100"
+                }`}
               >
                 {copySuccess ? "Copied!" : "Export"}
               </button>
+              {deckBuildError && (
+                <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm max-w-xs">
+                  {deckBuildError}
+                </div>
+              )}
+              {deckWarning && (
+                <div className="mt-2 p-2 bg-red-100 border border-amber-500 text-amber-600 rounded text-sm max-w-xs">
+                  {deckWarning}
+                </div>
+              )}
             </div>
           </div>
-        </div>
-
-        {/* Debug Info */}
-        <div className="mt-8 p-4 bg-gray-100 rounded">
-          <h3 className="font-bold mb-2">Current Selection:</h3>
-          <p>
-            <strong>Mana:</strong>{" "}
-            {Object.entries(selectedMana)
-              .filter(([_, selected]) => selected)
-              .map(([symbol, _]) => symbol)
-              .join(", ") || "None"}
-          </p>
-          <p>
-            <strong>Packages:</strong>{" "}
-            {Object.entries(selectedPackages)
-              .filter(([_, selected]) => selected)
-              .map(([name, _]) => name)
-              .join(", ") || "None"}
-          </p>
         </div>
       </div>
     </div>
