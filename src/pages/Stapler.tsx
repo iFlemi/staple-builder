@@ -243,13 +243,11 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
     debouncedPopulateExportList()
   }
 
-  const handleCommanderNameChange = (value: string) => {
-    setCommanderName(value)
+  const handleCommanderNameBlur = () => {
     debouncedPopulateExportList()
   }
 
-  const handleDeckNameChange = (value: string) => {
-    setDeckName(value)
+  const handleDeckNameBlur = () => {
     debouncedPopulateExportList()
   }
 
@@ -435,7 +433,8 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                   type="text"
                   id="commanderName"
                   value={commanderName}
-                  onChange={(e) => handleCommanderNameChange(e.target.value)}
+                  onChange={(e) => setCommanderName(e.target.value)}
+                  onBlur={handleCommanderNameBlur}
                   disabled={isLoading}
                   className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 />
@@ -452,7 +451,8 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
                   type="text"
                   id="deckName"
                   value={deckName}
-                  onChange={(e) => handleDeckNameChange(e.target.value)}
+                  onChange={(e) => setDeckName(e.target.value)}
+                  onBlur={handleDeckNameBlur}
                   disabled={isLoading}
                   className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 />
