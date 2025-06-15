@@ -93,6 +93,7 @@ const Stapler = ({ packages, cacheEntries }: Props) => {
     if (deckExportResult.isLeft()) {
       console.error(deckExportResult.getLeft())
       setDeckBuildError(deckExportResult.getLeft().message)
+      setTimeout(() => setDeckBuildError(""), 5000)
       return
     }
 
