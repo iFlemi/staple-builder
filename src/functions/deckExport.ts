@@ -3,11 +3,11 @@ import { CardExport, DeckExport } from "@/domain/DeckExport"
 import { ofType } from "mismatched"
 
 export const getDeckExport = (
-  cards: Card[],
+  cardNames: string[],
   commanderName: string = "Progenitus",
   deckName: string = "Brawl Stapler Import",
 ): DeckExport => {
-  const exportCards = cards.map(convertToExport)
+  const exportCards = cardNames.map((cn) => ({ name: cn, quantity: 1 }))
 
   //deck exports as friendly brawl if the card count is less than 100 (including commander)
   if (exportCards.length < 99) {
@@ -33,13 +33,6 @@ export const getDeckExport = (
     cardLines: exportCards,
     commanderName,
     deckName,
-  }
-}
-
-export const convertToExport = (card: Card): CardExport => {
-  return {
-    name: card.name,
-    quantity: 1,
   }
 }
 

@@ -1,6 +1,5 @@
 import { describe, it } from "vitest"
 import { getDeckExport, toMTGAExport } from "@/functions/deckExport"
-import { White } from "@/domain/Colour"
 import { Option } from "prelude-ts"
 import { Card } from "@/domain/Card"
 import { assertThat, match, PrettyPrinter } from "mismatched"
@@ -34,14 +33,6 @@ describe("deckExport tests", () => {
   })
 
   const generateCards = (quantity: number) => {
-    const card: Card = {
-      name: "Wastes",
-      colourRequirement: [],
-      packageName: Option.none(),
-    }
-    return [...Array(quantity)].map((_, i) => ({
-      ...card,
-      name: `${card.name}`,
-    }))
+    return [...Array(quantity)].fill("Wastes")
   }
 })

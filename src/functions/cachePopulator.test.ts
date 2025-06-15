@@ -2,28 +2,29 @@ import { describe, it } from "vitest"
 import { assertThat, match, PrettyPrinter } from "mismatched"
 import * as Colour from "@/domain/Colour"
 import { FileData } from "@/domain/FileData"
-import { fileDataToCardList } from "@/functions/cardNameListParser"
 import { Option } from "prelude-ts"
+import { loadFileDataIntoCache } from "@/functions/cachePopulator"
+import { newCardCache } from "@/functions/cardCache"
 
 describe("fileDataToCardList tests", () => {
+  const cache = newCardCache()
+
   it("should convert file data with single colour to card list", () => {
     const fileData: FileData = {
       fileName: "U",
-      fileContents: "High Tide\r\nCounterspell",
+      fileContents: "High Tide\nCounterspell",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isRight()).is(true)
     assertThat(result.getOrThrow()).is([
       {
         name: "High Tide",
         colourRequirement: [Colour.Blue],
-        packageName: Option.none(),
       },
       {
         name: "Counterspell",
         colourRequirement: [Colour.Blue],
-        packageName: Option.none(),
       },
     ])
   })
@@ -31,21 +32,19 @@ describe("fileDataToCardList tests", () => {
   it("should convert file data with multiple colours to card list", () => {
     const fileData: FileData = {
       fileName: "UR",
-      fileContents: "Shao Jun\r\nTellah, Great Sage",
+      fileContents: "Shao Jun\nTellah, Great Sage",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isRight()).is(true)
     assertThat(result.getOrThrow()).is([
       {
         name: "Shao Jun",
         colourRequirement: match.array.unordered([Colour.Red, Colour.Blue]),
-        packageName: Option.none(),
       },
       {
         name: "Tellah, Great Sage",
         colourRequirement: match.array.unordered([Colour.Red, Colour.Blue]),
-        packageName: Option.none(),
       },
     ])
   })
@@ -53,21 +52,19 @@ describe("fileDataToCardList tests", () => {
   it("should convert file data with colourless cards", () => {
     const fileData: FileData = {
       fileName: "C",
-      fileContents: "Sol Ring\r\nMana Crypt",
+      fileContents: "Sol Ring\nMana Crypt",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isRight()).is(true)
     assertThat(result.getOrThrow()).is([
       {
         name: "Sol Ring",
         colourRequirement: [Colour.Colourless],
-        packageName: Option.none(),
       },
       {
         name: "Mana Crypt",
         colourRequirement: [Colour.Colourless],
-        packageName: Option.none(),
       },
     ])
   })
@@ -78,13 +75,12 @@ describe("fileDataToCardList tests", () => {
       fileContents: "Lightning Bolt",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isRight()).is(true)
     assertThat(result.getOrThrow()).is([
       {
         name: "Lightning Bolt",
         colourRequirement: [Colour.Red],
-        packageName: Option.none(),
       },
     ])
   })
@@ -95,7 +91,7 @@ describe("fileDataToCardList tests", () => {
       fileContents: "",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isLeft()).is(true)
     assertThat(
       result.getLeftOrElse(new Error("Should not get here")).message,
@@ -105,10 +101,10 @@ describe("fileDataToCardList tests", () => {
   it("should handle file contents with only whitespace", () => {
     const fileData: FileData = {
       fileName: "U",
-      fileContents: "   \r\n   \r\n   ",
+      fileContents: "   \n   \n   ",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isLeft()).is(true)
     assertThat(
       result.getLeftOrElse(new Error("Should not get here")).message,
@@ -118,21 +114,19 @@ describe("fileDataToCardList tests", () => {
   it("should filter out empty lines from file contents", () => {
     const fileData: FileData = {
       fileName: "B",
-      fileContents: "Dark Ritual\r\n\r\nDoom Blade\r\n",
+      fileContents: "Dark Ritual\n\nDoom Blade\n",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isRight()).is(true)
     assertThat(result.getOrThrow()).is([
       {
         name: "Dark Ritual",
         colourRequirement: [Colour.Black],
-        packageName: Option.none(),
       },
       {
         name: "Doom Blade",
         colourRequirement: [Colour.Black],
-        packageName: Option.none(),
       },
     ])
   })
@@ -140,10 +134,10 @@ describe("fileDataToCardList tests", () => {
   it("should fail when invalid colour in filename", () => {
     const fileData: FileData = {
       fileName: "WXU",
-      fileContents: "Lightning Bolt\r\nCounterspell",
+      fileContents: "Lightning Bolt\nCounterspell",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isLeft()).is(true)
     assertThat(
       result.getLeftOrElse(new Error("Should not get here")).message,
@@ -160,26 +154,23 @@ describe("fileDataToCardList tests", () => {
   it("should preserve card name exactly as written", () => {
     const fileData: FileData = {
       fileName: "G",
-      fileContents: "Giant Growth\r\nLlanowar Elves\r\nBirds of Paradise",
+      fileContents: "Giant Growth\nLlanowar Elves\nBirds of Paradise",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isRight()).is(true)
     assertThat(result.getOrThrow()).is([
       {
         name: "Giant Growth",
         colourRequirement: [Colour.Green],
-        packageName: Option.none(),
       },
       {
         name: "Llanowar Elves",
         colourRequirement: [Colour.Green],
-        packageName: Option.none(),
       },
       {
         name: "Birds of Paradise",
         colourRequirement: [Colour.Green],
-        packageName: Option.none(),
       },
     ])
   })
@@ -190,7 +181,7 @@ describe("fileDataToCardList tests", () => {
       fileContents: "Child of Alara",
     }
 
-    const result = fileDataToCardList(fileData)
+    const result = loadFileDataIntoCache(fileData, cache)
     assertThat(result.isRight()).is(true)
     assertThat(result.getOrThrow()).is([
       {
@@ -202,7 +193,6 @@ describe("fileDataToCardList tests", () => {
           Colour.Red,
           Colour.Green,
         ]),
-        packageName: Option.none(),
       },
     ])
   })

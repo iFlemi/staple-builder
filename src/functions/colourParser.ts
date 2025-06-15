@@ -3,7 +3,6 @@ import { Result } from "@/utils/Result"
 import { Colour, Colourless, colourMap } from "@/domain/Colour"
 import { Either } from "prelude-ts"
 import * as Array from "@/utils/Array"
-import { sortChars } from "@/utils/String"
 
 export const stringToColourIdentity = (input: string) =>
   pipe(

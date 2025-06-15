@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename)
 
 describe("loadFromFile local tests", () => {
   it("loads from card list file", async () => {
-    const testPath = path.join(__dirname, "../utils/card-lists/static")
+    const testPath = path.join(__dirname, "../../public/card-lists/static")
     const results = await getFileContentsInDirectory(testPath)
     assertThat(results.length).is(29)
     assertThat(results.map((f) => f.fileName)).is(
