@@ -9,10 +9,9 @@ const __dirname = path.dirname(__filename)
 
 describe("loadFromFile local tests", () => {
   it("loads from card list file", async () => {
-    const testPath = path.join(__dirname, "../utils/card-lists/uncommon")
+    const testPath = path.join(__dirname, "../utils/card-lists/static")
     const results = await getFileContentsInDirectory(testPath)
-    PrettyPrinter.logToConsole(results)
-    assertThat(results.length).is(27)
+    assertThat(results.length).is(29)
     assertThat(results.map((f) => f.fileName)).is(
       match.array.every(match.ofType.string()),
     )

@@ -1,10 +1,8 @@
 import { Colour } from "@/domain/Colour"
-
-export type CardCategory = "uncommon" | "rare"
+import { Option } from "prelude-ts"
 
 export type Card = {
   name: string
-  //not handling actual rarity yet, just categorising by common/uncommon or rare/mythic.
-  rarity: CardCategory //'C' | 'U' | 'R' | 'M'
   colourRequirement: Colour[]
+  packageName: Option<string> //todo: type this?
 }
